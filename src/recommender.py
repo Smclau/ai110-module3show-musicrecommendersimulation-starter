@@ -66,6 +66,23 @@ def load_songs(csv_path: str) -> List[Dict]:
             songs.append(row)
     return songs
 
+# Genres that earn partial credit (0.5) when they don't exactly match the user's genre
+GENRE_NEIGHBORS: Dict[str, list] = {
+    "lofi":       ["ambient", "jazz", "classical"],
+    "ambient":    ["lofi", "classical", "folk"],
+    "jazz":       ["lofi", "classical", "r&b"],
+    "classical":  ["lofi", "ambient", "jazz", "folk"],
+    "folk":       ["classical", "ambient", "jazz"],
+    "rock":       ["metal", "electronic", "synthwave"],
+    "metal":      ["rock", "electronic"],
+    "electronic": ["synthwave", "rock", "metal"],
+    "synthwave":  ["electronic", "rock"],
+    "pop":        ["indie pop", "r&b", "synthwave"],
+    "indie pop":  ["pop", "folk", "r&b"],
+    "r&b":        ["pop", "indie pop", "jazz"],
+    "hip-hop":    ["r&b", "pop", "electronic"],
+}
+
 # Each mood mapped to (energy, valence) coordinates for proximity scoring
 MOOD_COORDINATES: Dict[str, Tuple[float, float]] = {
     "happy":    (0.75, 0.85),
@@ -97,7 +114,13 @@ def _score_song(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
     valence_score = 1 - abs(song["valence"]      - target_valence)
     acoustic_score= 1 - abs(song["acousticness"] - user_prefs["target_acousticness"])
     mood_score    = _mood_proximity(song["mood"], user_prefs["favorite_mood"])
-    genre_bonus   = 1.0 if song["genre"] == user_prefs["favorite_genre"] else 0.0
+    user_genre = user_prefs["favorite_genre"]
+    if song["genre"] == user_genre:
+        genre_bonus = 1.0
+    elif song["genre"] in GENRE_NEIGHBORS.get(user_genre, []):
+        genre_bonus = 0.5
+    else:
+        genre_bonus = 0.0
 
     # Note: a near-perfect energy match can outweigh a mood mismatch between
     # close neighbors (e.g. "chill" vs "focused"). Acceptable for this simulation.
@@ -108,8 +131,10 @@ def _score_song(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
            + genre_bonus    * 0.15)
 
     reasons = []
-    if genre_bonus:
+    if genre_bonus == 1.0:
         reasons.append(f"{song['genre']} genre match")
+    elif genre_bonus == 0.5:
+        reasons.append(f"{song['genre']} close to {user_genre}")
     if mood_score == 1.0:
         reasons.append(f"{song['mood']} mood match")
     elif mood_score >= 0.80:
@@ -126,4 +151,19 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     """
     scored = [(_score_song(song, user_prefs), song) for song in songs]
     scored.sort(key=lambda x: x[0][0], reverse=True)
-    return [(song, score, explanation) for (score, explanation), song in scored[:k]]
+
+    # Diversity re-ranking: greedily pick songs, penalizing genre+mood clusters
+    # already represented in the selected results.
+    selected = []
+    seen_clusters = {}  # (genre, mood) -> count of times already picked
+    DIVERSITY_PENALTY = 0.15  # score penalty per repeat of the same cluster
+
+    for (score, explanation), song in scored:
+        cluster = (song["genre"], song["mood"])
+        penalty = seen_clusters.get(cluster, 0) * DIVERSITY_PENALTY
+        adjusted_score = round(score - penalty, 4)
+        selected.append((song, adjusted_score, explanation))
+        seen_clusters[cluster] = seen_clusters.get(cluster, 0) + 1
+
+    selected.sort(key=lambda x: x[1], reverse=True)
+    return selected[:k]
