@@ -235,3 +235,137 @@ A few sentences about what you learned:
 - How did building this change how you think about real music recommenders
 - Where do you think human judgment still matters, even if the model seems "smart"
 
+![System Flowchart](image.png)
+![Terminal Output](TerminalSS.png)
+![User Profile Driven Song](User%20Profile%20Driven%20Song-2026-04-09-182113.png)
+![User Profile Driven Song#2](image-1.png)
+![User Profile Driven Song#3](image-2.png)
+
+## Terminal Output (All Profiles)
+
+```
+=== Chill Lofi Session ===
+
+Library Rain - Score: 0.97
+Because: lofi genre match, chill mood match, energy 0.35 ≈ your 0.38
+
+Focus Flow - Score: 0.96
+Because: lofi genre match, focused mood close to chill, energy 0.4 ≈ your 0.38
+
+Coffee Shop Stories - Score: 0.92
+Because: jazz close to lofi, relaxed mood close to chill, energy 0.37 ≈ your 0.38
+
+Deep Blue - Score: 0.91
+Because: ambient close to lofi, dreamy mood close to chill, energy 0.33 ≈ your 0.38
+
+Spacewalk Thoughts - Score: 0.91
+Because: ambient close to lofi, chill mood match, energy 0.28 ≈ your 0.38
+
+
+=== Focused Lofi Session ===
+
+Midnight Coding - Score: 0.98
+Because: lofi genre match, chill mood close to focused, energy 0.42 ≈ your 0.42
+
+Focus Flow - Score: 0.97
+Because: lofi genre match, focused mood match, energy 0.4 ≈ your 0.42
+
+Coffee Shop Stories - Score: 0.88
+Because: jazz close to lofi, relaxed mood close to focused, energy 0.37 ≈ your 0.42
+
+Deep Blue - Score: 0.87
+Because: ambient close to lofi, dreamy mood close to focused, energy 0.33 ≈ your 0.42
+
+Ember Trail - Score: 0.86
+Because: relaxed mood close to focused, energy 0.44 ≈ your 0.42
+
+
+=== Relaxed Lofi Session ===
+
+Library Rain - Score: 0.95
+Because: lofi genre match, chill mood close to relaxed, energy 0.35 ≈ your 0.34
+
+Coffee Shop Stories - Score: 0.94
+Because: jazz close to lofi, relaxed mood match, energy 0.37 ≈ your 0.34
+
+Deep Blue - Score: 0.94
+Because: ambient close to lofi, dreamy mood close to relaxed, energy 0.33 ≈ your 0.34
+
+Focus Flow - Score: 0.92
+Because: lofi genre match, focused mood close to relaxed, energy 0.4 ≈ your 0.34
+
+Spacewalk Thoughts - Score: 0.91
+Because: ambient close to lofi, chill mood close to relaxed, energy 0.28 ≈ your 0.34
+
+
+=== Pop Happy Session ===
+
+Sunrise City - Score: 0.99
+Because: pop genre match, happy mood match, energy 0.82 ≈ your 0.8
+
+Rooftop Lights - Score: 0.94
+Because: indie pop close to pop, happy mood match, energy 0.76 ≈ your 0.8
+
+Gym Hero - Score: 0.87
+Because: pop genre match
+
+Concrete Jungle - Score: 0.86
+Because: energetic mood close to happy, energy 0.85 ≈ your 0.8
+
+Pulse Wave - Score: 0.82
+Because: energetic mood close to happy, energy 0.88 ≈ your 0.8
+
+
+=== High-Energy Pop ===
+
+Gym Hero - Score: 0.95
+Because: pop genre match, intense mood close to energetic, energy 0.93 ≈ your 0.9
+
+Concrete Jungle - Score: 0.91
+Because: energetic mood match, energy 0.85 ≈ your 0.9
+
+Pulse Wave - Score: 0.91
+Because: energetic mood match, energy 0.88 ≈ your 0.9
+
+Sunrise City - Score: 0.91
+Because: pop genre match, happy mood close to energetic, energy 0.82 ≈ your 0.9
+
+Storm Runner - Score: 0.85
+Because: intense mood close to energetic, energy 0.91 ≈ your 0.9
+
+
+=== Deep Intense Rock ===
+
+Storm Runner - Score: 0.98
+Because: rock genre match, intense mood match, energy 0.91 ≈ your 0.92
+
+Pulse Wave - Score: 0.90
+Because: electronic close to rock, energetic mood close to intense, energy 0.88 ≈ your 0.92
+
+Gym Hero - Score: 0.88
+Because: intense mood match, energy 0.93 ≈ your 0.92
+
+Circuit Breaker - Score: 0.87
+Because: metal close to rock, angry mood close to intense, energy 0.97 ≈ your 0.92
+
+Night Drive Loop - Score: 0.84
+Because: synthwave close to rock, moody mood close to intense
+
+
+=== Sad Acoustic Folk ===
+
+Hollow Roads - Score: 0.99
+Because: folk genre match, sad mood match, energy 0.31 ≈ your 0.3
+
+Rainy Window - Score: 0.92
+Because: classical close to folk, sad mood match, energy 0.22 ≈ your 0.3
+
+Spacewalk Thoughts - Score: 0.84
+Because: ambient close to folk, energy 0.28 ≈ your 0.3
+
+Deep Blue - Score: 0.82
+Because: ambient close to folk, energy 0.33 ≈ your 0.3
+
+Library Rain - Score: 0.80
+Because: energy 0.35 ≈ your 0.3
+```
