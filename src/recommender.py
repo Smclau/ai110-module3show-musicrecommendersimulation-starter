@@ -114,6 +114,9 @@ def _score_song(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
     valence_score = 1 - abs(song["valence"]      - target_valence)
     acoustic_score= 1 - abs(song["acousticness"] - user_prefs["target_acousticness"])
     mood_score    = _mood_proximity(song["mood"], user_prefs["favorite_mood"])
+    # Infer target danceability from energy — high-energy users prefer danceable tracks
+    target_dance   = user_prefs["target_energy"]
+    dance_score    = 1 - abs(song["danceability"] - target_dance)
     user_genre = user_prefs["favorite_genre"]
     if song["genre"] == user_genre:
         genre_bonus = 1.0
@@ -122,13 +125,13 @@ def _score_song(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
     else:
         genre_bonus = 0.0
 
-    # Note: a near-perfect energy match can outweigh a mood mismatch between
-    # close neighbors (e.g. "chill" vs "focused"). Acceptable for this simulation.
-    score = (energy_score   * 0.35
-           + valence_score  * 0.25
-           + mood_score     * 0.20
-           + acoustic_score * 0.05
-           + genre_bonus    * 0.15)
+    # Weights sum: 0.50 + 0.20 + 0.15 + 0.05 + 0.04 + 0.06 = 1.00
+    score = (energy_score   * 0.50
+           + valence_score  * 0.20
+           + mood_score     * 0.15
+           + dance_score    * 0.05
+           + acoustic_score * 0.04
+           + genre_bonus    * 0.06)
 
     reasons = []
     if genre_bonus == 1.0:
@@ -144,12 +147,96 @@ def _score_song(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
     explanation = ", ".join(reasons) if reasons else "closest attribute match"
     return round(score, 4), explanation
 
-def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
+def _score_genre_first(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
+    """Genre-First strategy: genre match weighted at 45%, energy/mood secondary."""
+    target_valence = MOOD_COORDINATES.get(user_prefs["favorite_mood"], (0.5, 0.6))[1]
+    user_genre = user_prefs["favorite_genre"]
+    if song["genre"] == user_genre:
+        genre_bonus = 1.0
+    elif song["genre"] in GENRE_NEIGHBORS.get(user_genre, []):
+        genre_bonus = 0.5
+    else:
+        genre_bonus = 0.0
+
+    energy_score  = 1 - abs(song["energy"]      - user_prefs["target_energy"])
+    valence_score = 1 - abs(song["valence"]      - target_valence)
+    mood_score    = _mood_proximity(song["mood"], user_prefs["favorite_mood"])
+    acoustic_score= 1 - abs(song["acousticness"] - user_prefs["target_acousticness"])
+    dance_score   = 1 - abs(song["danceability"] - user_prefs["target_energy"])
+
+    # Weights sum: 0.45 + 0.25 + 0.15 + 0.10 + 0.03 + 0.02 = 1.00
+    score = (genre_bonus   * 0.45
+           + energy_score  * 0.25
+           + mood_score    * 0.15
+           + valence_score * 0.10
+           + acoustic_score* 0.03
+           + dance_score   * 0.02)
+
+    reasons = []
+    if genre_bonus == 1.0:
+        reasons.append(f"{song['genre']} genre match")
+    elif genre_bonus == 0.5:
+        reasons.append(f"{song['genre']} close to {user_genre}")
+    if mood_score >= 0.80:
+        reasons.append(f"{song['mood']} mood")
+    if energy_score >= 0.90:
+        reasons.append(f"energy {song['energy']} ≈ your {user_prefs['target_energy']}")
+    explanation = ", ".join(reasons) if reasons else "closest attribute match"
+    return round(score, 4), explanation
+
+
+def _score_mood_first(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
+    """Mood-First strategy: mood proximity weighted at 45%, genre is minor."""
+    target_valence = MOOD_COORDINATES.get(user_prefs["favorite_mood"], (0.5, 0.6))[1]
+    user_genre = user_prefs["favorite_genre"]
+    if song["genre"] == user_genre:
+        genre_bonus = 1.0
+    elif song["genre"] in GENRE_NEIGHBORS.get(user_genre, []):
+        genre_bonus = 0.5
+    else:
+        genre_bonus = 0.0
+
+    energy_score  = 1 - abs(song["energy"]      - user_prefs["target_energy"])
+    valence_score = 1 - abs(song["valence"]      - target_valence)
+    mood_score    = _mood_proximity(song["mood"], user_prefs["favorite_mood"])
+    acoustic_score= 1 - abs(song["acousticness"] - user_prefs["target_acousticness"])
+    dance_score   = 1 - abs(song["danceability"] - user_prefs["target_energy"])
+
+    # Weights sum: 0.45 + 0.25 + 0.15 + 0.10 + 0.03 + 0.02 = 1.00
+    score = (mood_score    * 0.45
+           + valence_score * 0.25
+           + energy_score  * 0.15
+           + genre_bonus   * 0.10
+           + acoustic_score* 0.03
+           + dance_score   * 0.02)
+
+    reasons = []
+    if mood_score == 1.0:
+        reasons.append(f"{song['mood']} mood match")
+    elif mood_score >= 0.80:
+        reasons.append(f"{song['mood']} mood close to {user_prefs['favorite_mood']}")
+    if genre_bonus == 1.0:
+        reasons.append(f"{song['genre']} genre")
+    elif genre_bonus == 0.5:
+        reasons.append(f"{song['genre']} close to {user_genre}")
+    explanation = ", ".join(reasons) if reasons else "closest attribute match"
+    return round(score, 4), explanation
+
+
+STRATEGIES: Dict[str, object] = {
+    "energy-first": _score_song,
+    "genre-first":  _score_genre_first,
+    "mood-first":   _score_mood_first,
+}
+
+
+def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5, strategy: str = "energy-first") -> List[Tuple[Dict, float, str]]:
     """
     Functional implementation of the recommendation logic.
     Required by src/main.py
     """
-    scored = [(_score_song(song, user_prefs), song) for song in songs]
+    scorer = STRATEGIES.get(strategy, _score_song)
+    scored = [(scorer(song, user_prefs), song) for song in songs]
     scored.sort(key=lambda x: x[0][0], reverse=True)
 
     # Diversity re-ranking: greedily pick songs, penalizing genre+mood clusters
